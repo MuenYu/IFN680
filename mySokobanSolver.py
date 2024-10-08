@@ -62,27 +62,22 @@ def taboo_cells(warehouse):
     
     # Create a set of target coordinates for easier lookup
     targets = set(warehouse.targets)
-    
-    # Helper function to find interior cells using flood-fill
-    def find_interior():
-        interior = set()
-        to_check = deque([warehouse.worker])
-        
-        while to_check:
-            x, y = to_check.popleft()
-            if (x, y) not in interior and (x, y) not in walls:
-                interior.add((x, y))
-                # Add adjacent cells to check
-                for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                    next_x, next_y = x + dx, y + dy
-                    if 0 <= next_x < x_size and 0 <= next_y < y_size:
-                        to_check.append((next_x, next_y))
-        
-        return interior
+    interior_cells = set()
 
-    # Get the interior cells
-    interior_cells = find_interior()
+    # find all interior cells using BFS
+    to_check = deque([warehouse.worker])
+        
+    while to_check:
+        x, y = to_check.popleft()
+        if (x, y) not in interior_cells and (x, y) not in walls:
+            interior_cells.add((x, y))
+            # Add adjacent cells to check
+            for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                next_x, next_y = x + dx, y + dy
+                if 0 <= next_x < x_size and 0 <= next_y < y_size:
+                    to_check.append((next_x, next_y))
     
+    # The taboo cells set
     taboo = set()
 
     # Rule 1: Find corner cells in interior (ignoring targets)
@@ -109,7 +104,8 @@ def taboo_cells(warehouse):
                 if row_taboo_cells:  # Check cells between corners
                     wall_above = all((xx, y-1) in walls for xx, yy in row_taboo_cells)
                     wall_below = all((xx, y+1) in walls for xx, yy in row_taboo_cells)
-                    if (wall_above or wall_below) and all((xx, yy) not in targets for xx, yy in row_taboo_cells):
+                    no_target = all((xx, yy) not in targets for xx, yy in row_taboo_cells)
+                    if (wall_above or wall_below) and no_target:
                         taboo.update(row_taboo_cells)
                 row_taboo_cells = []  # Reset after processing
             else:
@@ -125,7 +121,8 @@ def taboo_cells(warehouse):
                 if col_taboo_cells:  # Check cells between corners
                     wall_left = all((x-1, yy) in walls for xx, yy in col_taboo_cells)
                     wall_right = all((x+1, yy) in walls for xx, yy in col_taboo_cells)
-                    if (wall_left or wall_right) and all((xx, yy) not in targets for xx, yy in col_taboo_cells):
+                    no_target = all((xx, yy) not in targets for xx, yy in col_taboo_cells)
+                    if (wall_left or wall_right) and no_target:
                         taboo.update(col_taboo_cells)
                 col_taboo_cells = []  # Reset after processing
             else:
