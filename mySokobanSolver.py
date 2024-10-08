@@ -170,7 +170,17 @@ class SokobanPuzzle(search.Problem):
     '''
     
     def __init__(self, warehouse):
-        raise NotImplementedError()
+        """
+        Initializes the Sokoban puzzle.
+
+        :param warehouse: A valid Warehouse object.
+        :param macro: If True, use macro actions (moving boxes directly). If False, use elementary actions (worker moves).
+        :param allow_taboo_push: If True, allow moves that push a box into a taboo cell. If False, such moves are not allowed.
+        """
+        self.warehouse = warehouse
+        self.allow_taboo_push = False
+        self.macro = False
+        self.initial = (warehouse.worker, tuple(warehouse.boxes))
 
     def actions(self, state):
         """
@@ -180,7 +190,91 @@ class SokobanPuzzle(search.Problem):
         'self.allow_taboo_push' and 'self.macro' should be tested to determine
         what type of list of actions is to be returned.
         """
-        raise NotImplementedError
+        worker, boxes = state
+        possible_actions = []
+
+        # Possible directions (dx, dy) and corresponding movement descriptions
+        directions = {
+            'Left': (-1, 0),
+            'Right': (1, 0),
+            'Up': (0, -1),
+            'Down': (0, 1)
+        }
+
+        if self.macro:
+            # Generate macro actions: Worker must be next to a box, and move that box.
+            for (box_x, box_y) in boxes:
+                for direction, (dx, dy) in directions.items():
+                    next_worker_pos = (box_x - dx, box_y - dy)
+                    next_box_pos = (box_x + dx, box_y + dy)
+
+                    # Check if the worker can move next to the box and push it in the valid direction
+                    if self.is_valid_move(worker, next_worker_pos, boxes) and self.is_valid_move(boxes, next_box_pos, boxes):
+                        if self.allow_taboo_push or next_box_pos not in taboo_cells(self.warehouse):
+                            possible_actions.append(((box_x, box_y), direction))
+        else:
+            # Elementary actions: Worker moves by one step
+            for direction, (dx, dy) in directions.items():
+                next_worker_pos = (worker[0] + dx, worker[1] + dy)
+
+                # Check if the worker can move without obstacles
+                if self.is_valid_move(worker, next_worker_pos, boxes):
+                    possible_actions.append(direction)
+
+        return possible_actions
+
+    def result(self, state, action):
+        """
+        Returns the resulting state after applying the given action to the given state.
+        """
+        worker, boxes = state
+        boxes = list(boxes)
+
+        if self.macro:
+            # Macro action: push a box
+            (box_x, box_y), direction = action
+            dx, dy = {'Left': (-1, 0), 'Right': (1, 0), 'Up': (0, -1), 'Down': (0, 1)}[direction]
+            new_box_pos = (box_x + dx, box_y + dy)
+            new_worker_pos = (box_x, box_y)
+
+            # Update box position
+            boxes.remove((box_x, box_y))
+            boxes.append(new_box_pos)
+
+            return new_worker_pos, tuple(boxes)
+        else:
+            # Elementary action: move worker
+            direction = action
+            dx, dy = {'Left': (-1, 0), 'Right': (1, 0), 'Up': (0, -1), 'Down': (0, 1)}[direction]
+            new_worker_pos = (worker[0] + dx, worker[1] + dy)
+
+            # If the worker pushes a box, move the box as well
+            if new_worker_pos in boxes:
+                new_box_pos = (new_worker_pos[0] + dx, new_worker_pos[1] + dy)
+                boxes.remove(new_worker_pos)
+                boxes.append(new_box_pos)
+
+            return new_worker_pos, tuple(boxes)
+
+
+    def goal_test(self, state):
+        """
+        Returns True if the given state is a goal state.
+        The goal state is when all boxes are on target cells.
+        """
+        _, boxes = state
+        return all(box in self.warehouse.targets for box in boxes)
+
+
+    def is_valid_move(self, worker, next_pos, boxes):
+        """
+        Check if a worker can move to the next position.
+        """
+        if next_pos in self.warehouse.walls:
+            return False
+        if next_pos in boxes:
+            return False
+        return True
 
 
 def check_action_seq(warehouse, action_seq):
@@ -206,10 +300,37 @@ def check_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    
-    ##         "INSERT YOUR CODE HERE"
-    
-    raise NotImplementedError()
+    worker = warehouse.worker
+    boxes = set(warehouse.boxes)
+    walls = set(warehouse.walls)
+    targets = set(warehouse.targets)
+
+    directions = {
+        'Left': (-1, 0),
+        'Right': (1, 0),
+        'Up': (0, -1),
+        'Down': (0, 1)
+    }
+
+    for action in action_seq:
+        dx, dy = directions[action]
+        next_worker_pos = (worker[0] + dx, worker[1] + dy)
+
+        if next_worker_pos in walls:
+            return "Failure"
+
+        if next_worker_pos in boxes:
+            next_box_pos = (next_worker_pos[0] + dx, next_worker_pos[1] + dy)
+            if next_box_pos in walls or next_box_pos in boxes:
+                return "Failure"
+            boxes.remove(next_worker_pos)
+            boxes.add(next_box_pos)
+
+        worker = next_worker_pos
+
+    # Update warehouse with the new positions and return the result
+    new_warehouse = warehouse.copy(worker=worker, boxes=boxes)
+    return str(new_warehouse)
 
 
 def solve_sokoban_elem(warehouse):
@@ -229,7 +350,13 @@ def solve_sokoban_elem(warehouse):
     
     ##         "INSERT YOUR CODE HERE"
     
-    raise NotImplementedError()
+    sokoban_puzzle = SokobanPuzzle(warehouse)
+    solution = search.breadth_first_graph_search(sokoban_puzzle)
+    
+    if solution is None:
+        return 'Impossible'
+    else:
+        return solution.solution()
 
 
 def can_go_there(warehouse, dst):
@@ -243,10 +370,32 @@ def can_go_there(warehouse, dst):
       True if the worker can walk to cell dst=(row,column) without pushing any box
       False otherwise
     '''
-    
-    ##         "INSERT YOUR CODE HERE"
-    
-    raise NotImplementedError()
+    sokoban_puzzle = SokobanPuzzle(warehouse, macro=False)
+    problem = sokoban_puzzle.initial
+
+    def is_reachable(problem, dst):
+        frontier = deque([problem])
+        explored = set()
+
+        while frontier:
+            current_state = frontier.popleft()
+            worker, _ = current_state
+
+            if worker == dst:
+                return True
+
+            if worker in explored:
+                continue
+            explored.add(worker)
+
+            # Get all possible movements
+            for action in sokoban_puzzle.actions(current_state):
+                new_state = sokoban_puzzle.result(current_state, action)
+                frontier.append(new_state)
+
+        return False
+
+    return is_reachable(problem, dst)
 
 def solve_sokoban_macro(warehouse):
     '''    
@@ -266,8 +415,12 @@ def solve_sokoban_macro(warehouse):
         Otherwise return M a sequence of macro actions that solves the puzzle.
         If the puzzle is already in a goal state, simply return []
     '''
+    sokoban_puzzle = SokobanPuzzle(warehouse)
+    sokoban_puzzle.macro = True
+    solution = search.breadth_first_graph_search(sokoban_puzzle)
     
-    ##         "INSERT YOUR CODE HERE"
-    
-    raise NotImplementedError()
+    if solution is None:
+        return 'Impossible'
+    else:
+        return solution.solution()
 
