@@ -32,3 +32,59 @@ def test_taboo_cells():
         print(fcn.__name__, ' failed!  :-(\n')
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
+
+def test_check_elem_action_seq():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_0001.txt")
+    # first test
+    answer = check_action_seq(wh, ['Right', 'Right','Down'])
+    expected_answer = '####  \n# .#  \n#  ###\n#*   #\n#  $@#\n#  ###\n####  '
+    fcn = test_check_elem_action_seq    
+    print('<<  First test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+    # second test
+    answer = check_action_seq(wh, ['Right', 'Right','Right'])
+    expected_answer = 'Failure'
+    fcn = test_check_elem_action_seq    
+    print('<<  Second test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
+def test_solve_sokoban_elem():
+    puzzle_t1 ='#######\n#@ $. #\n#######'
+    wh = Warehouse()    
+    wh.extract_locations(puzzle_t1.split(sep='\n'))
+    # first test
+    answer = solve_sokoban_elem(wh)
+    expected_answer = ['Right', 'Right']
+    fcn = test_solve_sokoban_elem
+    print('<<  First test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+    # second test
+    puzzle_t2 ='#######\n#@ $ #.#\n#######'
+    wh = Warehouse()    
+    wh.extract_locations(puzzle_t2.split(sep='\n'))
+    # second test
+    answer = solve_sokoban_elem(wh)
+    expected_answer = 'Impossible'
+    print('<<  Second test of {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
