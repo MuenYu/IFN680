@@ -28,7 +28,12 @@ def my_team():
 
 def scan_taboo(warehouse):
     '''
-    return a grid of the warehouse with taboo cells and a taboo cell set
+    the main logic for taboo_cells, including steps:
+    1. create a grid based on the maze
+    2. check the inner space of the maze
+    3. check rule1: corner taboo in the inner space
+    4. check rule2: taboo on the line along the wall
+    5. return a grid of the warehouse with taboo cells and a taboo cell set
     '''
     # Get the dimensions of the warehouse
     X, Y = zip(*warehouse.walls)
@@ -186,6 +191,10 @@ class SokobanPuzzle(search.Problem):
         self.macro = False
         _, self.taboo_cells = scan_taboo(warehouse)
         self.initial = (warehouse.worker, tuple(warehouse.boxes))
+        # walls won't change its position, use set to optimize performance
+        self.walls = set(warehouse.walls)
+        # target won't change its position, use set to optimize performance
+        self.targets = set(warehouse.targets)
         # Possible directions (dx, dy) and corresponding movement descriptions
         self.directions = {
             'Left': (-1, 0),
@@ -203,6 +212,8 @@ class SokobanPuzzle(search.Problem):
         what type of list of actions is to be returned.
         """
         worker, boxes = state
+        # the places of boxes are confirmed, use set to optimize performance
+        boxes = set(boxes)
         possible_actions = []
 
         if self.macro:
@@ -233,7 +244,8 @@ class SokobanPuzzle(search.Problem):
         Returns the resulting state after applying the given action to the given state.
         """
         worker, boxes = state
-        boxes = list(boxes)
+        # the places of boxes are confirmed, use set to optimize performance
+        boxes = set(boxes)
 
         if self.macro:
             pass
@@ -258,7 +270,7 @@ class SokobanPuzzle(search.Problem):
             if new_worker_pos in boxes:
                 new_box_pos = (new_worker_pos[0] + dx, new_worker_pos[1] + dy)
                 boxes.remove(new_worker_pos)
-                boxes.append(new_box_pos)
+                boxes.add(new_box_pos)
 
             return new_worker_pos, tuple(boxes)
 
@@ -269,7 +281,7 @@ class SokobanPuzzle(search.Problem):
         The goal state is when all boxes are on target cells.
         """
         _, boxes = state
-        return all(box in self.warehouse.targets for box in boxes)
+        return all(box in self.targets for box in boxes)
 
     def is_valid_elem_move(self, direction, next_pos, boxes):
         """
@@ -278,14 +290,14 @@ class SokobanPuzzle(search.Problem):
         next_pos: the position of worker after moving
         boxes: list of boxes
         """
-        if next_pos in self.warehouse.walls:
+        if next_pos in self.walls:
             return False
         if next_pos in boxes:
             x, y = next_pos
             dx, dy = self.directions[direction]
             new_box = (x+dx, y+dy)
             # you cannot push two boxes or push a box to a wall
-            if new_box in boxes or new_box in self.warehouse.walls:
+            if new_box in boxes or new_box in self.walls:
                 return False
             # you cannot push a box to taboo cell
             if not self.allow_taboo_push and new_box in self.taboo_cells:
