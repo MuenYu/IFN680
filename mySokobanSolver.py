@@ -26,14 +26,14 @@ def my_team():
         (11491205, 'Danny', 'Jeong')
     ]
 
-def scan_taboo(warehouse):
+def scan_warehouse(warehouse):
     '''
     the main logic for taboo_cells, including steps:
     1. create a grid based on the maze
     2. check the inner space of the maze
     3. check rule1: corner taboo in the inner space
     4. check rule2: taboo on the line along the wall
-    5. return a grid of the warehouse with taboo cells and a taboo cell set
+    5. return a interior cell set, a taboo cell set and grid
     '''
     # Get the dimensions of the warehouse
     X, Y = zip(*warehouse.walls)
@@ -119,7 +119,7 @@ def scan_taboo(warehouse):
     for (x, y) in taboo:
         grid[y][x] = "X"
 
-    return grid, taboo
+    return interior_cells, taboo, grid
 
 def taboo_cells(warehouse):
     '''  
@@ -143,7 +143,7 @@ def taboo_cells(warehouse):
        and the boxes.  
     '''
     # fetch the grid of the warehouse with taboo cells
-    grid, _ = scan_taboo(warehouse)
+    _, _, grid = scan_warehouse(warehouse)
     
     # Convert grid to string
     return "\n".join(["".join(line) for line in grid])
@@ -189,7 +189,7 @@ class SokobanPuzzle(search.Problem):
         self.warehouse = warehouse
         self.allow_taboo_push = False
         self.macro = False
-        _, self.taboo_cells = scan_taboo(warehouse)
+        self.interior_cells, self.taboo_cells, _ = scan_warehouse(warehouse)
         self.initial = (warehouse.worker, tuple(warehouse.boxes))
         # walls won't change its position, use set to optimize performance
         self.walls = set(warehouse.walls)
@@ -379,32 +379,7 @@ def can_go_there(warehouse, dst):
       True if the worker can walk to cell dst=(row,column) without pushing any box
       False otherwise
     '''
-    sokoban_puzzle = SokobanPuzzle(warehouse, macro=False)
-    problem = sokoban_puzzle.initial
-
-    def is_reachable(problem, dst):
-        frontier = deque([problem])
-        explored = set()
-
-        while frontier:
-            current_state = frontier.popleft()
-            worker, _ = current_state
-
-            if worker == dst:
-                return True
-
-            if worker in explored:
-                continue
-            explored.add(worker)
-
-            # Get all possible movements
-            for action in sokoban_puzzle.actions(current_state):
-                new_state = sokoban_puzzle.result(current_state, action)
-                frontier.append(new_state)
-
-        return False
-
-    return is_reachable(problem, dst)
+    pass
 
 def solve_sokoban_macro(warehouse):
     '''    
