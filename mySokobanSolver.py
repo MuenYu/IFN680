@@ -148,6 +148,18 @@ def taboo_cells(warehouse):
     # Convert grid to string
     return "\n".join(["".join(line) for line in grid])
 
+def reverse_direction(direction):
+    '''
+    return the reversed direction string
+    '''
+    reversed_map = {
+        'Left': 'Right',
+        'Right': 'Left',
+        'Up': 'Down',
+        'Down': 'Up',
+    }
+    return reversed_map[direction]
+
 class SokobanPuzzle(search.Problem):
     '''
     An instance of the class 'SokobanPuzzle' represents a Sokoban puzzle.
@@ -217,17 +229,15 @@ class SokobanPuzzle(search.Problem):
         possible_actions = []
 
         if self.macro:
-            pass
             # Generate macro actions: Worker must be next to a box, and move that box.
-            # for (box_x, box_y) in boxes:
-            #     for direction, (dx, dy) in self.directions.items():
-            #         next_worker_pos = (box_x - dx, box_y - dy)
-            #         next_box_pos = (box_x + dx, box_y + dy)
-
-            #         # Check if the worker can move next to the box and push it in the valid direction
-            #         if self.is_valid_move(next_worker_pos, boxes) and self.is_valid_move(boxes, next_box_pos, boxes):
-            #             if self.allow_taboo_push or next_box_pos not in taboo_cells(self.warehouse):
-            #                 possible_actions.append(((box_x, box_y), direction))
+            for (box_x, box_y) in boxes:
+                for direction, (dx, dy) in self.directions.items():
+                    next_worker_pos = (box_x - dx, box_y - dy)
+                    next_box_pos = (box_x + dx, box_y + dy)
+                    # is the new position reachable? can u push the box there?
+                    if self.is_dst_reachable(worker, boxes, next_worker_pos) and self.is_valid_elem_move(direction, next_worker_pos, boxes):
+                        if self.allow_taboo_push or next_box_pos not in self.taboo_cells:
+                            possible_actions.append(((box_y, box_x), direction))
         else:
             # Elementary actions: Worker moves by one step
             for direction, (dx, dy) in self.directions.items():
@@ -248,18 +258,17 @@ class SokobanPuzzle(search.Problem):
         boxes = set(boxes)
 
         if self.macro:
-            pass
             # Macro action: push a box
-            # (box_x, box_y), direction = action
-            # dx, dy = self.directions[direction]
-            # new_box_pos = (box_x + dx, box_y + dy)
-            # new_worker_pos = (box_x, box_y)
+            (box_y, box_x), direction = action
+            dx, dy = self.directions[direction]
+            new_box_pos = (box_x + dx, box_y + dy)
+            new_worker_pos = (box_x, box_y)
 
             # # Update box position
-            # boxes.remove((box_x, box_y))
-            # boxes.append(new_box_pos)
+            boxes.remove((box_x, box_y))
+            boxes.add(new_box_pos)
 
-            # return new_worker_pos, tuple(boxes)
+            return new_worker_pos, tuple(boxes)
         else:
             # Elementary action: move worker
             direction = action
@@ -304,13 +313,11 @@ class SokobanPuzzle(search.Problem):
                 return False
         return True
 
-    def is_dst_reachable(self, state, dst):
+    def is_dst_reachable(self, worker, boxes, dst):
         '''
         is the destination reachable without moving a box
 
         '''
-        worker, boxes = state
-        boxes = set(boxes)
         # the destination cannot be a box or wall
         if dst in self.walls or dst in boxes:
             return False
@@ -409,9 +416,8 @@ def can_go_there(warehouse, dst):
       False otherwise
     '''
     solver = SokobanPuzzle(warehouse)
-    state = (warehouse.worker, tuple(warehouse.boxes))
     y, x = dst
-    return solver.is_dst_reachable(state, (x,y))
+    return solver.is_dst_reachable(warehouse.worker, set(warehouse.boxes), (x,y))
 
 def solve_sokoban_macro(warehouse):
     '''    
@@ -431,9 +437,9 @@ def solve_sokoban_macro(warehouse):
         Otherwise return M a sequence of macro actions that solves the puzzle.
         If the puzzle is already in a goal state, simply return []
     '''
-    sokoban_puzzle = SokobanPuzzle(warehouse)
-    sokoban_puzzle.macro = True
-    solution = search.breadth_first_graph_search(sokoban_puzzle)
+    solver = SokobanPuzzle(warehouse)
+    solver.macro = True
+    solution = search.breadth_first_graph_search(solver)
     
     if solution is None:
         return 'Impossible'
