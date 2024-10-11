@@ -202,7 +202,6 @@ class SokobanPuzzle(search.Problem):
             'Up': (0, -1),
             'Down': (0, 1)
         }
-        self.reachability_cache = {}
 
     def actions(self, state):
         """
@@ -218,12 +217,14 @@ class SokobanPuzzle(search.Problem):
         possible_actions = []
 
         if self.macro:
+            reachable = self.get_reachable_range(worker, boxes)
+
             # Generate macro actions: Worker must be next to a box, and move that box.
             for (box_x, box_y) in boxes:
                 for direction, (dx, dy) in self.directions.items():
                     next_worker_pos = (box_x - dx, box_y - dy)
                     # is the new position reachable? can u push the box there?
-                    if self.is_valid_elem_move(direction, next_worker_pos, boxes) and self.is_dst_reachable(worker, boxes, next_worker_pos):
+                    if self.is_valid_elem_move(direction, next_worker_pos, boxes) and next_worker_pos in reachable:
                         possible_actions.append(((box_y, box_x), direction))
         else:
             # Elementary actions: Worker moves by one step
@@ -299,42 +300,60 @@ class SokobanPuzzle(search.Problem):
                 return False
         return True
 
-    def is_dst_reachable(self, worker, boxes, dst):
+    def get_reachable_range(self, worker, boxes):
         '''
-        is the destination reachable without moving a box
-        @ param worker: a tuple, the current location
-        @ param boxes: a set, all boxes in the maze
-        @ param dst: a tuple, the destination I want to reach
+        return a set including all reachable locations for current worker and boxes
         '''
-        key = (worker, tuple(boxes), dst)
-        # read cache to avoid redundant search
-        if key in self.reachability_cache:
-            return self.reachability_cache[key]
-
-        # the destination cannot be a box or wall
-        if dst in self.walls or dst in boxes or dst not in self.interior_cells:
-            return False
-        
-        # BFS: find a way to the dst without moving a box
         queue = deque([worker])
         visited = {worker}
 
         while queue:
             cur_pos = queue.popleft()
 
-            if cur_pos == dst:
-                self.reachability_cache[key] = True
-                return True
-            
-            for _, (dx,dy) in self.directions.items():
-                next_pos = (cur_pos[0]+dx, cur_pos[1]+dy)
+            for _, (dx, dy) in self.directions.items():
+                next_pos = (cur_pos[0] + dx, cur_pos[1] + dy)
 
                 if next_pos not in visited and next_pos not in self.walls and next_pos not in boxes:
                     visited.add(next_pos)
                     queue.append(next_pos)
+        return visited
 
-        self.reachability_cache[key] = False
-        return False
+    # def is_dst_reachable(self, worker, boxes, dst):
+    #     '''
+    #     is the destination reachable without moving a box
+    #     @ param worker: a tuple, the current location
+    #     @ param boxes: a set, all boxes in the maze
+    #     @ param dst: a tuple, the destination I want to reach
+    #     '''
+    #     key = (worker, tuple(boxes), dst)
+    #     # read cache to avoid redundant search
+    #     if key in self.reachability_cache:
+    #         return self.reachability_cache[key]
+    #
+    #     # the destination cannot be a box or wall
+    #     if dst in self.walls or dst in boxes or dst not in self.interior_cells:
+    #         return False
+    #
+    #     # BFS: find a way to the dst without moving a box
+    #     queue = deque([worker])
+    #     visited = {worker}
+    #
+    #     while queue:
+    #         cur_pos = queue.popleft()
+    #
+    #         if cur_pos == dst:
+    #             self.reachability_cache[key] = True
+    #             return True
+    #
+    #         for _, (dx,dy) in self.directions.items():
+    #             next_pos = (cur_pos[0]+dx, cur_pos[1]+dy)
+    #
+    #             if next_pos not in visited and next_pos not in self.walls and next_pos not in boxes:
+    #                 visited.add(next_pos)
+    #                 queue.append(next_pos)
+    #
+    #     self.reachability_cache[key] = False
+    #     return False
 
 def check_action_seq(warehouse, action_seq):
     '''
@@ -412,7 +431,8 @@ def can_go_there(warehouse, dst):
     '''
     solver = SokobanPuzzle(warehouse)
     y, x = dst
-    return solver.is_dst_reachable(warehouse.worker, set(warehouse.boxes), (x,y))
+    reachable = solver.get_reachable_range(warehouse.worker, set(warehouse.boxes))
+    return (x,y) in reachable
 
 def solve_sokoban_macro(warehouse):
     '''    
