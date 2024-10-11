@@ -148,18 +148,6 @@ def taboo_cells(warehouse):
     # Convert grid to string
     return "\n".join(["".join(line) for line in grid])
 
-def reverse_direction(direction):
-    '''
-    return the reversed direction string
-    '''
-    reversed_map = {
-        'Left': 'Right',
-        'Right': 'Left',
-        'Up': 'Down',
-        'Down': 'Up',
-    }
-    return reversed_map[direction]
-
 class SokobanPuzzle(search.Problem):
     '''
     An instance of the class 'SokobanPuzzle' represents a Sokoban puzzle.
