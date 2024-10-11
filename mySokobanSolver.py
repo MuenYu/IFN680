@@ -33,7 +33,7 @@ def scan_warehouse(warehouse):
     2. check the inner space of the maze
     3. check rule1: corner taboo in the inner space
     4. check rule2: taboo on the line along the wall
-    5. return a interior cell set, a taboo cell set and grid
+    5. return an interior cell set, a taboo cell set and grid
     '''
     # Get the dimensions of the warehouse
     X, Y = zip(*warehouse.walls)
@@ -304,6 +304,35 @@ class SokobanPuzzle(search.Problem):
                 return False
         return True
 
+    def is_dst_reachable(self, state, dst):
+        '''
+        is the destination reachable without moving a box
+
+        '''
+        worker, boxes = state
+        boxes = set(boxes)
+        # the destination cannot be a box or wall
+        if dst in self.walls or dst in boxes:
+            return False
+        
+        # BFS: find a way to the dst without moving a box
+        queue = deque([worker])
+        visited = {worker}
+
+        while queue:
+            cur_pos = queue.popleft()
+
+            if cur_pos == dst:
+                return True
+            
+            for _, (dx,dy) in self.directions.items():
+                next_pos = (cur_pos[0]+dx, cur_pos[1]+dy)
+
+                if next_pos not in self.walls and next_pos not in boxes and next_pos not in visited:
+                    visited.add(next_pos)
+                    queue.append(next_pos)
+
+        return False
 
 def check_action_seq(warehouse, action_seq):
     '''
@@ -379,7 +408,10 @@ def can_go_there(warehouse, dst):
       True if the worker can walk to cell dst=(row,column) without pushing any box
       False otherwise
     '''
-    pass
+    solver = SokobanPuzzle(warehouse)
+    state = (warehouse.worker, tuple(warehouse.boxes))
+    y, x = dst
+    return solver.is_dst_reachable(state, (x,y))
 
 def solve_sokoban_macro(warehouse):
     '''    
