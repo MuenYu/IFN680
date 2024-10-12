@@ -323,11 +323,49 @@ class SokobanPuzzle(search.Problem):
         return the sum of manhattan distance between boxes and the closest target
         '''
         worker, boxes = state.state
-        total_distance = 0
-        for (box_x,box_y) in boxes:
-            distances = [abs(box_x-target_x)+abs(box_y-target_y) for (target_x, target_y) in self.targets]
-            total_distance += min(distances)
-        return total_distance
+
+        # 1. Calculate the sum of the minimum matching distances between boxes and targets
+        total_box_target_distance = 0
+        boxes = list(boxes)
+        targets = list(self.targets)
+
+        # Calculate the minimum matching distance using Manhattan distance
+        distances = []
+        for box in boxes:
+            box_distances = []
+            for target in targets:
+                box_distances.append(abs(box[0] - target[0]) + abs(box[1] - target[1]))
+            distances.append(box_distances)
+
+        # Use a greedy approximation to find minimum matching between boxes and targets
+        while boxes and targets:
+            # Find the box-target pair with the minimum distance
+            min_distance = float('inf')
+            min_box_idx, min_target_idx = -1, -1
+            for i, box_distances in enumerate(distances):
+                for j, distance in enumerate(box_distances):
+                    if distance < min_distance:
+                        min_distance = distance
+                        min_box_idx = i
+                        min_target_idx = j
+
+            # Add the minimum distance to the total distance
+            total_box_target_distance += min_distance
+
+            # Remove the selected box and target from further consideration
+            boxes.pop(min_box_idx)
+            targets.pop(min_target_idx)
+            distances.pop(min_box_idx)
+            for box_distances in distances:
+                box_distances.pop(min_target_idx)
+
+        # 2. Calculate the distance from the worker to the closest box
+        worker_to_box_distances = [abs(worker[0] - box[0]) + abs(worker[1] - box[1]) for box in boxes]
+        worker_distance = min(worker_to_box_distances) if worker_to_box_distances else 0
+
+        # Heuristic value is the sum of the distances and the penalty
+        return total_box_target_distance + worker_distance
+
 
 def check_action_seq(warehouse, action_seq):
     '''
@@ -383,7 +421,6 @@ def solve_sokoban_elem(warehouse):
     '''
     
     solver = SokobanPuzzle(warehouse)
-    # TODO: try a more efficient search algorithm
     solution = search.breadth_first_graph_search(solver)
     
     if solution is None:
