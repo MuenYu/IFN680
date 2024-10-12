@@ -317,6 +317,18 @@ class SokobanPuzzle(search.Problem):
                     queue.append(next_pos)
         return visited
 
+    def h(self, state):
+        '''
+        heuristic function for A*
+        return the sum of manhattan distance between boxes and the closest target
+        '''
+        worker, boxes = state.state
+        total_distance = 0
+        for (box_x,box_y) in boxes:
+            distances = [abs(box_x-target_x)+abs(box_y-target_y) for (target_x, target_y) in self.targets]
+            total_distance += min(distances)
+        return total_distance
+
 def check_action_seq(warehouse, action_seq):
     '''
     
