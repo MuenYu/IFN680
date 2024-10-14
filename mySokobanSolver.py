@@ -9,10 +9,9 @@ That is, changing the formal parameters of a function will break the
 interface and triggers to a fail for the test of your code.
 '''
 
-
 import search
-import sokoban
 from collections import deque
+
 
 def my_team():
     '''
@@ -26,6 +25,7 @@ def my_team():
         (11491205, 'Danny', 'Jeong')
     ]
 
+
 def scan_warehouse(warehouse):
     '''
     the main logic for taboo_cells, including steps:
@@ -38,22 +38,22 @@ def scan_warehouse(warehouse):
     # Get the dimensions of the warehouse
     X, Y = zip(*warehouse.walls)
     x_size, y_size = 1 + max(X), 1 + max(Y)
-    
+
     # Initialize the grid with spaces
     grid = [[" "] * x_size for _ in range(y_size)]
-    
+
     # Mark the walls
     walls = set(warehouse.walls)
     for (x, y) in walls:
         grid[y][x] = "#"
-    
+
     # Create a set of target coordinates for easier lookup
     targets = set(warehouse.targets)
     interior_cells = set()
 
     # find all interior cells using BFS
     to_check = deque([warehouse.worker])
-        
+
     while to_check:
         x, y = to_check.popleft()
         if (x, y) not in interior_cells and (x, y) not in walls:
@@ -63,7 +63,7 @@ def scan_warehouse(warehouse):
                 next_x, next_y = x + dx, y + dy
                 if 0 <= next_x < x_size and 0 <= next_y < y_size:
                     to_check.append((next_x, next_y))
-    
+
     # The taboo cells set
     taboo = set()
 
@@ -71,43 +71,43 @@ def scan_warehouse(warehouse):
     for x, y in interior_cells:
         if (x, y) not in targets:
             # Check if cell is a corner
-            adjacent_walls = sum([(x-1, y) in walls, (x+1, y) in walls, 
-                                  (x, y-1) in walls, (x, y+1) in walls])
+            adjacent_walls = sum([(x - 1, y) in walls, (x + 1, y) in walls,
+                                  (x, y - 1) in walls, (x, y + 1) in walls])
             if adjacent_walls >= 2:
                 # Confirm it's a corner by checking diagonal walls
-                if ((x-1, y) in walls and (x, y-1) in walls) or \
-                   ((x-1, y) in walls and (x, y+1) in walls) or \
-                   ((x+1, y) in walls and (x, y-1) in walls) or \
-                   ((x+1, y) in walls and (x, y+1) in walls):
+                if ((x - 1, y) in walls and (x, y - 1) in walls) or \
+                        ((x - 1, y) in walls and (x, y + 1) in walls) or \
+                        ((x + 1, y) in walls and (x, y - 1) in walls) or \
+                        ((x + 1, y) in walls and (x, y + 1) in walls):
                     taboo.add((x, y))
-    
+
     # Rule 2: Find cells between corners along walls
-    for y in range(1, y_size-1):
+    for y in range(1, y_size - 1):
         row_taboo_cells = []
-        for x in range(1, x_size-1):
+        for x in range(1, x_size - 1):
             if (x, y) in walls:
                 row_taboo_cells = []  # Reset if we encounter a wall
             elif (x, y) in taboo:  # Found a corner
                 if row_taboo_cells:  # Check cells between corners
-                    wall_above = all((xx, y-1) in walls for xx, yy in row_taboo_cells)
-                    wall_below = all((xx, y+1) in walls for xx, yy in row_taboo_cells)
+                    wall_above = all((xx, y - 1) in walls for xx, yy in row_taboo_cells)
+                    wall_below = all((xx, y + 1) in walls for xx, yy in row_taboo_cells)
                     no_target = all((xx, yy) not in targets for xx, yy in row_taboo_cells)
                     if (wall_above or wall_below) and no_target:
                         taboo.update(row_taboo_cells)
                 row_taboo_cells = []  # Reset after processing
             else:
                 row_taboo_cells.append((x, y))
-    
+
     # Repeat for columns (vertical walls)
-    for x in range(1, x_size-1):
+    for x in range(1, x_size - 1):
         col_taboo_cells = []
-        for y in range(1, y_size-1):
+        for y in range(1, y_size - 1):
             if (x, y) in walls:
                 col_taboo_cells = []  # Reset if we encounter a wall
             elif (x, y) in taboo:  # Found a corner
                 if col_taboo_cells:  # Check cells between corners
-                    wall_left = all((x-1, yy) in walls for xx, yy in col_taboo_cells)
-                    wall_right = all((x+1, yy) in walls for xx, yy in col_taboo_cells)
+                    wall_left = all((x - 1, yy) in walls for xx, yy in col_taboo_cells)
+                    wall_right = all((x + 1, yy) in walls for xx, yy in col_taboo_cells)
                     no_target = all((xx, yy) not in targets for xx, yy in col_taboo_cells)
                     if (wall_left or wall_right) and no_target:
                         taboo.update(col_taboo_cells)
@@ -120,6 +120,7 @@ def scan_warehouse(warehouse):
         grid[y][x] = "X"
 
     return interior_cells, taboo, grid
+
 
 def taboo_cells(warehouse):
     '''  
@@ -144,9 +145,10 @@ def taboo_cells(warehouse):
     '''
     # fetch the grid of the warehouse with taboo cells
     _, _, grid = scan_warehouse(warehouse)
-    
+
     # Convert grid to string
     return "\n".join(["".join(line) for line in grid])
+
 
 class SokobanPuzzle(search.Problem):
     '''
@@ -177,8 +179,8 @@ class SokobanPuzzle(search.Problem):
     
     
     '''
-    
-    def __init__(self, warehouse):
+
+    def __init__(self, warehouse, macro=False, allow_taboo_push=False):
         """
         Initializes the Sokoban puzzle.
 
@@ -187,8 +189,8 @@ class SokobanPuzzle(search.Problem):
         :param allow_taboo_push: If True, allow moves that push a box into a taboo cell. If False, such moves are not allowed.
         """
         self.warehouse = warehouse
-        self.allow_taboo_push = False
-        self.macro = False
+        self.allow_taboo_push = allow_taboo_push
+        self.macro = macro
         self.interior_cells, self.taboo_cells, _ = scan_warehouse(warehouse)
         self.initial = (warehouse.worker, tuple(warehouse.boxes))
         # walls won't change its position, use set to optimize performance
@@ -212,13 +214,14 @@ class SokobanPuzzle(search.Problem):
         'self.allow_taboo_push' and 'self.macro' should be tested to determine
         what type of list of actions is to be returned.
         """
+        if state in self.history:
+            return []
+
         worker, boxes = state
         # the places of boxes are confirmed, use set to optimize performance
         boxes = set(boxes)
         possible_actions = []
 
-        if state in self.history:
-            return possible_actions
 
         self.history.add(state)
 
@@ -275,7 +278,6 @@ class SokobanPuzzle(search.Problem):
 
             return new_worker_pos, tuple(boxes)
 
-
     def goal_test(self, state):
         """
         Returns True if the given state is a goal state.
@@ -296,13 +298,16 @@ class SokobanPuzzle(search.Problem):
         if next_pos in boxes:
             x, y = next_pos
             dx, dy = self.directions[direction]
-            new_box = (x+dx, y+dy)
+            new_box = (x + dx, y + dy)
             # you cannot push two boxes or push a box to a wall
             if new_box in boxes or new_box in self.walls:
                 return False
             # you cannot push a box to taboo cell
-            if not self.allow_taboo_push and new_box in self.taboo_cells:
-                return False
+            if not self.allow_taboo_push:
+                if new_box in self.taboo_cells:
+                    return False
+                # TODO: dead lock check
+
         return True
 
     def get_reachable_range(self, worker, boxes):
@@ -335,8 +340,10 @@ class SokobanPuzzle(search.Problem):
         sort_pos_box = list(boxes.difference(completes))
         sort_pos_target = list(self.targets.difference(completes))
         for i in range(len(sort_pos_box)):
-            distance += (abs(sort_pos_box[i][0] - sort_pos_target[i][0])) + (abs(sort_pos_box[i][1] - sort_pos_target[i][1]))
+            distance += (abs(sort_pos_box[i][0] - sort_pos_target[i][0])) + (
+                abs(sort_pos_box[i][1] - sort_pos_target[i][1]))
         return distance
+
 
 def check_action_seq(warehouse, action_seq):
     '''
@@ -361,14 +368,14 @@ def check_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    solver = SokobanPuzzle(warehouse)
+    solver = SokobanPuzzle(warehouse, allow_taboo_push=True)
     state = solver.initial
 
     for action in action_seq:
         possible_actions = solver.actions(state)
         if action not in possible_actions:
             return 'Failure'
-        state = solver.result(state,action)
+        state = solver.result(state, action)
 
     # Update warehouse with the new positions and return the result
     worker, boxes = state
@@ -390,10 +397,10 @@ def solve_sokoban_elem(warehouse):
             For example, ['Left', 'Down', Down','Right', 'Up', 'Down']
             If the puzzle is already in a goal state, simply return []
     '''
-    
+
     solver = SokobanPuzzle(warehouse)
     solution = search.astar_graph_search(solver)
-    
+
     if solution is None:
         return 'Impossible'
     else:
@@ -414,7 +421,8 @@ def can_go_there(warehouse, dst):
     solver = SokobanPuzzle(warehouse)
     y, x = dst
     reachable = solver.get_reachable_range(warehouse.worker, set(warehouse.boxes))
-    return (x,y) in reachable
+    return (x, y) in reachable
+
 
 def solve_sokoban_macro(warehouse):
     '''    
@@ -434,12 +442,10 @@ def solve_sokoban_macro(warehouse):
         Otherwise return M a sequence of macro actions that solves the puzzle.
         If the puzzle is already in a goal state, simply return []
     '''
-    solver = SokobanPuzzle(warehouse)
-    solver.macro = True
+    solver = SokobanPuzzle(warehouse, macro=True)
     solution = search.astar_graph_search(solver)
-    
+
     if solution is None:
         return 'Impossible'
     else:
         return solution.solution()
-
