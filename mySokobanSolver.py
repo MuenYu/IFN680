@@ -202,6 +202,7 @@ class SokobanPuzzle(search.Problem):
             'Up': (0, -1),
             'Down': (0, 1)
         }
+        self.history = set()
 
     def actions(self, state):
         """
@@ -215,6 +216,11 @@ class SokobanPuzzle(search.Problem):
         # the places of boxes are confirmed, use set to optimize performance
         boxes = set(boxes)
         possible_actions = []
+
+        if state in self.history:
+            return possible_actions
+
+        self.history.add(state)
 
         if self.macro:
             reachable = self.get_reachable_range(worker, boxes)
