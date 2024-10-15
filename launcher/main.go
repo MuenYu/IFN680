@@ -55,6 +55,7 @@ func main() {
 	stuckChan := make(chan struct{}, numCPU)
 	statsChan := make(chan statsRecord, len(houses))
 
+	initStats()
 	go runStats(statsChan)
 	for _, house := range houses {
 		wg.Add(1)

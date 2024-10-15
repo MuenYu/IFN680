@@ -303,10 +303,8 @@ class SokobanPuzzle(search.Problem):
             if new_box in boxes or new_box in self.walls:
                 return False
             # you cannot push a box to taboo cell
-            if not self.allow_taboo_push:
-                if new_box in self.taboo_cells:
-                    return False
-                # TODO: dead lock check
+            if not self.allow_taboo_push and new_box in self.taboo_cells:
+                return False
 
         return True
 

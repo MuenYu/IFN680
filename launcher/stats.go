@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	xlsxFile = openOrCreateXlsx()
-	sheet    = newWorkSheet(xlsxFile)
+	xlsxFile *xlsx.File  = nil
+	sheet    *xlsx.Sheet = nil
 	statsWg  sync.WaitGroup
 )
 
@@ -60,6 +60,11 @@ func newWorkSheet(xf *xlsx.File) *xlsx.Sheet {
 	row.AddCell().SetString("duration")
 	row.AddCell().SetString("solution")
 	return sh
+}
+
+func initStats() {
+	xlsxFile = openOrCreateXlsx()
+	sheet = newWorkSheet(xlsxFile)
 }
 
 func runStats(statsChan chan statsRecord) {
