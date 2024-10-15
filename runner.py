@@ -6,9 +6,19 @@ from sokoban import *
 from search import *
 import time
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() == 'true':
+        return True
+    elif v.lower() == 'false':
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--macro', type=bool)
-parser.add_argument('--taboo', type=bool)
+parser.add_argument('--macro', type=str2bool)
+parser.add_argument('--taboo', type=str2bool)
 parser.add_argument('--house', type=str)
 parser.add_argument('--algorithm', type=str)
 
