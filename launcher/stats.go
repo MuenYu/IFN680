@@ -11,7 +11,7 @@ import (
 
 var (
 	xlsxFile = openOrCreateXlsx()
-	sheet    = newWorkSheet()
+	sheet    = newWorkSheet(xlsxFile)
 	statsWg  sync.WaitGroup
 )
 
@@ -46,8 +46,8 @@ func openOrCreateXlsx() *xlsx.File {
 	return wb
 }
 
-func newWorkSheet() *xlsx.Sheet {
-	sh, err := xlsxFile.AddSheet(time.Now().Format("20060102150405"))
+func newWorkSheet(xf *xlsx.File) *xlsx.Sheet {
+	sh, err := xf.AddSheet(time.Now().Format("20060102150405"))
 	if err != nil {
 		log.Println(err.Error())
 		os.Exit(1)
