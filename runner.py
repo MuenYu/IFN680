@@ -27,7 +27,7 @@ else:
 duration = time.time() - start
 
 result = {
-    'duration': f"{duration:.3f}",
+    'duration': duration,
     'solution': 'Impossible' if solution is None else str(solution.solution())
 }
 

@@ -105,6 +105,6 @@ func runTask(housePath string) statsRecord {
 }
 
 type taskResult struct {
-	Duration string `json:"duration"`
-	Solution string `json:"solution"`
+	Duration float64 `json:"duration"`
+	Solution string  `json:"solution"`
 }

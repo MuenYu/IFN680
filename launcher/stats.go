@@ -4,6 +4,7 @@ import (
 	"github.com/tealeg/xlsx/v3"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -24,13 +25,15 @@ type statsRecord struct {
 }
 
 func (sr statsRecord) write2Row() {
+	tmp := strings.Split(sr.house, string(os.PathSeparator))
+
 	row := sheet.AddRow()
-	row.AddCell().SetString(sr.house)
+	row.AddCell().SetString(tmp[len(tmp)-1])
 	row.AddCell().SetString(sr.error)
 	row.AddCell().SetString(sr.macro)
 	row.AddCell().SetString(sr.algorithm)
 	if sr.taskResult != nil {
-		row.AddCell().SetString(sr.Duration)
+		row.AddCell().SetFloat(sr.Duration)
 		row.AddCell().SetString(sr.Solution)
 	}
 }
