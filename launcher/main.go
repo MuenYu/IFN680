@@ -27,6 +27,7 @@ var (
 	algorithm       = flag.String("algorithm", "astar", "algorithm for sokoban solver, it should be astar or bfs")
 	timeout         = flag.Duration("timeout", 3*time.Minute, "Specify the timeout for each task")
 	outputFile      = flag.String("output", "./result.xlsx", "Specify the output .xlsx file to store result")
+	concurrency     = flag.Int("concurrency", numCPU, "Specify the number of concurrent tests")
 )
 
 func loadWarehouse(folder string) []string {
@@ -52,7 +53,7 @@ func main() {
 	houses := loadWarehouse(*warehouseFolder)
 
 	wg := new(sync.WaitGroup)
-	stuckChan := make(chan struct{}, numCPU)
+	stuckChan := make(chan struct{}, *concurrency)
 	statsChan := make(chan statsRecord, len(houses))
 
 	initStats()
