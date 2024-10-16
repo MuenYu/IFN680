@@ -293,8 +293,10 @@ class SokobanPuzzle(search.Problem):
         next_pos: the position of worker after moving
         boxes: list of boxes
         """
+        # you cannot move to a wall
         if next_pos in self.walls:
             return False
+        # if you push a box
         if next_pos in boxes:
             x, y = next_pos
             dx, dy = self.directions[direction]
@@ -303,10 +305,49 @@ class SokobanPuzzle(search.Problem):
             if new_box in boxes or new_box in self.walls:
                 return False
             # you cannot push a box to taboo cell
-            if not self.allow_taboo_push and new_box in self.taboo_cells:
-                return False
+            if not self.allow_taboo_push:
+                # taboo cell deadlock check
+                if new_box in self.taboo_cells:
+                    return False
+                # frozen box check: refer http://sokobano.de/wiki/index.php?title=How_to_detect_deadlocks
+                if self.is_box_frozen(new_box, boxes, set()):
+                    return False
 
         return True
+
+    def is_box_frozen(self, box, boxes, checked_boxes):
+        """
+        Check if the given box is frozen, meaning it cannot be moved anymore.
+        box: the position of the box to check
+        boxes: list of all box positions
+        checked_boxes: set of boxes already checked to avoid circular checks
+        """
+        if box in checked_boxes:
+            # Treat already checked boxes as walls to avoid circular checks
+            return True
+
+        # Add the current box to the checked set
+        checked_boxes.add(box)
+
+        # Check if the box is blocked along both vertical and horizontal axes
+
+        # Check vertical axis (blocked by walls or other boxes)
+        x, y = box
+        if (x, y - 1) in self.walls or (x, y + 1) in self.walls:
+            vertical_blocked = True
+        else:
+            vertical_blocked = ((x, y - 1) in boxes and self.is_box_frozen((x, y - 1), boxes, checked_boxes)) or \
+                               ((x, y + 1) in boxes and self.is_box_frozen((x, y + 1), boxes, checked_boxes))
+
+        # Check horizontal axis (blocked by walls or other boxes)
+        if (x - 1, y) in self.walls or (x + 1, y) in self.walls:
+            horizontal_blocked = True
+        else:
+            horizontal_blocked = ((x - 1, y) in boxes and self.is_box_frozen((x - 1, y), boxes, checked_boxes)) or \
+                                 ((x + 1, y) in boxes and self.is_box_frozen((x + 1, y), boxes, checked_boxes))
+
+        # The box is frozen if it is blocked along both axes and not on a goal
+        return vertical_blocked and horizontal_blocked and box not in self.targets
 
     def get_reachable_range(self, worker, boxes):
         '''
