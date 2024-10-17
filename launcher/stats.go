@@ -5,14 +5,12 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
 var (
 	xlsxFile *xlsx.File  = nil
 	sheet    *xlsx.Sheet = nil
-	statsWg  sync.WaitGroup
 )
 
 // statistic record
@@ -65,21 +63,4 @@ func newWorkSheet(xf *xlsx.File) *xlsx.Sheet {
 func initStats() {
 	xlsxFile = openOrCreateXlsx()
 	sheet = newWorkSheet(xlsxFile)
-}
-
-func runStats(statsChan chan statsRecord) {
-	for record := range statsChan {
-		statsWg.Add(1)
-		go func(record statsRecord) {
-			defer statsWg.Done()
-			record.write2Row()
-		}(record)
-	}
-}
-
-func outputReport(statsChan chan statsRecord) {
-	statsWg.Wait()
-	if err := xlsxFile.Save(*outputFile); err != nil {
-		log.Println(err.Error())
-	}
 }
