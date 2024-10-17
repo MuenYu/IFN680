@@ -374,14 +374,15 @@ class SokobanPuzzle(search.Problem):
         '''
         worker, boxes = state.state
         boxes = set(boxes)
-        distance = 0
+        box_distance = 0
         completes = self.targets & boxes
         sort_pos_box = list(boxes.difference(completes))
         sort_pos_target = list(self.targets.difference(completes))
         for i in range(len(sort_pos_box)):
-            distance += (abs(sort_pos_box[i][0] - sort_pos_target[i][0])) + (
+            box_distance += (abs(sort_pos_box[i][0] - sort_pos_target[i][0])) + (
                 abs(sort_pos_box[i][1] - sort_pos_target[i][1]))
-        return distance
+        worker_distance = min([abs(worker[0]-box[0])+abs(worker[1]-box[1]) for box in boxes])
+        return 3 * box_distance + 2 * worker_distance
 
 
 def check_action_seq(warehouse, action_seq):
