@@ -359,7 +359,7 @@ class SokobanPuzzle(search.Problem):
         while queue:
             cur_pos = queue.popleft()
 
-            for _, (dx, dy) in self.directions.items():
+            for (dx, dy) in self.directions.values():
                 next_pos = (cur_pos[0] + dx, cur_pos[1] + dy)
 
                 if next_pos not in visited and next_pos not in self.walls and next_pos not in boxes:
