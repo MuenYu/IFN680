@@ -204,7 +204,6 @@ class SokobanPuzzle(search.Problem):
             'Up': (0, -1),
             'Down': (0, 1)
         }
-        self.history = set()
 
     def actions(self, state):
         """
@@ -214,16 +213,10 @@ class SokobanPuzzle(search.Problem):
         'self.allow_taboo_push' and 'self.macro' should be tested to determine
         what type of list of actions is to be returned.
         """
-        if state in self.history:
-            return []
-
         worker, boxes = state
         # the places of boxes are confirmed, use set to optimize performance
         boxes = set(boxes)
         possible_actions = []
-
-
-        self.history.add(state)
 
         if self.macro:
             reachable = self.get_reachable_range(worker, boxes)
