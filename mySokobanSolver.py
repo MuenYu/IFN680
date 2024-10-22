@@ -180,7 +180,7 @@ class SokobanPuzzle(search.Problem):
     
     '''
 
-    def __init__(self, warehouse, macro=False, allow_taboo_push=False):
+    def __init__(self, warehouse, macro=False, allow_taboo_push=False, history_check=True):
         """
         Initializes the Sokoban puzzle.
 
@@ -204,6 +204,8 @@ class SokobanPuzzle(search.Problem):
             'Up': (0, -1),
             'Down': (0, 1)
         }
+        self.history = set()
+        self.history_check = history_check
 
     def actions(self, state):
         """
@@ -213,6 +215,11 @@ class SokobanPuzzle(search.Problem):
         'self.allow_taboo_push' and 'self.macro' should be tested to determine
         what type of list of actions is to be returned.
         """
+        if self.history_check:
+            if state in self.history:
+                return []
+            self.history.add(state)
+
         worker, boxes = state
         # the places of boxes are confirmed, use set to optimize performance
         boxes = set(boxes)
@@ -375,7 +382,7 @@ class SokobanPuzzle(search.Problem):
             box_distance += (abs(sort_pos_box[i][0] - sort_pos_target[i][0])) + (
                 abs(sort_pos_box[i][1] - sort_pos_target[i][1]))
         worker_distance = min([abs(worker[0]-box[0])+abs(worker[1]-box[1]) for box in boxes])
-        return 3 * box_distance + 2 * worker_distance
+        return box_distance + worker_distance
 
 
 def check_action_seq(warehouse, action_seq):
@@ -401,7 +408,7 @@ def check_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    solver = SokobanPuzzle(warehouse, allow_taboo_push=True)
+    solver = SokobanPuzzle(warehouse, allow_taboo_push=True, history_check=False)
     state = solver.initial
 
     for action in action_seq:
