@@ -8,6 +8,7 @@ You are not allowed to change the defined interfaces.
 That is, changing the formal parameters of a function will break the 
 interface and triggers to a fail for the test of your code.
 '''
+import math
 
 import search
 from collections import deque
@@ -374,14 +375,15 @@ class SokobanPuzzle(search.Problem):
         '''
         worker, boxes = state.state
         boxes = set(boxes)
-        box_distance = 0
         completes = self.targets & boxes
-        sort_pos_box = list(boxes.difference(completes))
-        sort_pos_target = list(self.targets.difference(completes))
-        for i in range(len(sort_pos_box)):
-            box_distance += (abs(sort_pos_box[i][0] - sort_pos_target[i][0])) + (
-                abs(sort_pos_box[i][1] - sort_pos_target[i][1]))
-        worker_distance = min([abs(worker[0]-box[0])+abs(worker[1]-box[1]) for box in boxes])
+        boxes = boxes.difference(completes)
+        targets = self.targets.difference(completes)
+        box_distance = 0
+        for box, target in zip(boxes - completes, targets - completes):
+            box_distance += math.isqrt((box[0] - target[0]) ** 2 + (box[1] - target[1]) ** 2)
+        worker_distance = 0
+        if not self.macro:
+            worker_distance = min([abs(worker[0] - box[0]) + abs(worker[1] - box[1]) for box in boxes])
         return box_distance + worker_distance
 
 
