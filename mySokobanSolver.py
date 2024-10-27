@@ -382,7 +382,7 @@ class SokobanPuzzle(search.Problem):
         for box, target in zip(boxes, targets):
             box_distance += math.isqrt((box[0] - target[0]) ** 2 + (box[1] - target[1]) ** 2)
         worker_distance = 0
-        if not self.macro and len(boxes) > 0:
+        if not self.macro and boxes:
             worker_distance = min([abs(worker[0] - box[0]) + abs(worker[1] - box[1]) for box in boxes])
         return box_distance + worker_distance
 
